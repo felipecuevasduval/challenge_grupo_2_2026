@@ -46,5 +46,68 @@
             "module": "src.exercise_01.evaluate",
             "console": "integratedTerminal"
         },
+        {
+            "name": "exercise_02.dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_02.dataset",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_02.train",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_02.train",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_02.model",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_02.model",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_02.evaluate",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_02.evaluate",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_03.dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_03.dataset",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_03.train",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_03.train",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_03.model",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_03.model",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_03.evaluate",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_03.evaluate",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_04.dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_04.dataset",
+            "console": "integratedTerminal"
+        },
          ]
 }

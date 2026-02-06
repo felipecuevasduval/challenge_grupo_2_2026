@@ -25,7 +25,7 @@ class NoisyRegressionDataset(Dataset):
 
     def plot(self, filepath):
         ax = sns.scatterplot(self.df, x="x", y="y")
-        ax.set_title("Synthetic noisy data of y=5*x+2")
+        ax.set_title(f"Synthetic noisy data of y=-3*x^2+5*x+{self.delta[0]:.2f}")
         plt.savefig(filepath)
         plt.show()
 

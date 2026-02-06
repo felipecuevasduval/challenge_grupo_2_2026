@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import DataLoader, random_split
 
 from .dataset import NoisyRegressionDataset
-from .model import SimplePerceptron
+from .model import MultilayerPerceptron
 
 
 def evaluate_and_plot(loader, model, dataset_name, output_folder):
@@ -114,7 +114,14 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=10, shuffle=False)
 
     # Load the best model weights
-    model = SimplePerceptron(input_dim=1, output_dim=1)
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    model = MultilayerPerceptron(
+        input_dim=1,
+        output_dim=1,
+        num_hidden_neurons1=256,
+        num_hidden_neurons2=256,
+        apodo="modelo_regresion_polinomio_grado_2",
+    ).to(device)
     model.load_state_dict(torch.load(output_folder / "best_model.pth"))
 
     metrics = {}

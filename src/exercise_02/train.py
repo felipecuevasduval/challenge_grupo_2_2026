@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from .dataset import NoisyRegressionDataset
-from .model import SimplePerceptron
+from .model import MultilayerPerceptron
 
 
 def get_device(force: str = "auto") -> torch.device:
@@ -27,7 +27,7 @@ def get_device(force: str = "auto") -> torch.device:
 
 def train_model(output_folder: Path, device: torch.device):
     # Create an instance of the dataset
-    dataset = NoisyRegressionDataset(size=10000)
+    dataset = NoisyRegressionDataset(size=1000)
 
     # Split the dataset into train, validation, and test sets
     train_size = int(0.7 * len(dataset))
@@ -45,12 +45,16 @@ def train_model(output_folder: Path, device: torch.device):
     # Define the model, loss function, and optimizer
     input_dim = 1
     output_dim = 1
-    model = SimplePerceptron(input_dim, output_dim).to(device)
+    num_hidden_neurons = 256
+    apodo = "modelo_regresion_polinomio_grado_2"
+    model = MultilayerPerceptron(
+        input_dim, output_dim, num_hidden_neurons, num_hidden_neurons, apodo
+    ).to(device)
     criterion = nn.MSELoss()
-    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
+    optimizer = optim.AdamW(model.parameters(), lr=0.001)
 
     # Training loop with validation and saving best weights
-    num_epochs = 100
+    num_epochs = 2000
     best_val_loss = float("inf")
     best_model_path = output_folder / "best_model.pth"
 
@@ -122,9 +126,7 @@ if __name__ == "__main__":
 
     device = get_device("auto")  # choices are "auto", "cpu", "cuda"
     print(f"Using device: {device}")
-    
+
     # Set the seed for reproducibility
     torch.manual_seed(42)
     train_model(output_folder, device=device)
-
-
