@@ -39,8 +39,8 @@ def train_model(output_folder: Path, device: torch.device):
 
     # Create DataLoaders for the datasets
     pin_memory = True if device.type == "cuda" else False
-    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, pin_memory=pin_memory)
-    val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False, pin_memory=pin_memory)
+    train_loader = DataLoader(train_dataset, batch_size=10, shuffle=True, pin_memory=pin_memory)
+    val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False, pin_memory=pin_memory)
 
     # Define the model, loss function, and optimizer
     input_dim = 1
@@ -54,7 +54,7 @@ def train_model(output_folder: Path, device: torch.device):
     optimizer = optim.AdamW(model.parameters(), lr=0.001)
 
     # Training loop with validation and saving best weights
-    num_epochs = 1000
+    num_epochs = 200
     best_val_loss = float("inf")
     best_model_path = output_folder / "best_model.pth"
 
