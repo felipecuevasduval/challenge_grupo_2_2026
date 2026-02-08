@@ -13,16 +13,26 @@ from .model import MultilayerPerceptron
 
 def evaluate_and_plot(loader, model, dataset_name, output_folder):
     model.eval()
+    device = next(model.parameters()).device  # (Mejora) así evitamos el típico error de CPU vs CUDA en evaluación
     all_inputs = []
     all_outputs = []
     all_targets = []
 
+    # (Mejora) si el dataset normaliza x, esto nos permite volver a escala original para los plots
+    base_dataset = getattr(loader.dataset, "dataset", loader.dataset)
+    x_scale = getattr(base_dataset, "x_scale", 1.0)
+
     with torch.no_grad():
         for inputs, targets in loader:
-            outputs = model(inputs)
-            all_inputs.append(inputs.numpy())
-            all_outputs.append(outputs.numpy())
-            all_targets.append(targets.numpy())
+            # (Mejora) non_blocking aprovecha pin_memory del DataLoader cuando estás en CUDA
+            inputs = inputs.to(device, non_blocking=True)  # (Mejora) inputs y modelo siempre en el mismo device
+            targets = targets.to(device, non_blocking=True)
+            outputs = model(inputs, use_activation=False)
+
+            # (Mejora) para pasar a numpy, primero movemos a CPU (en CUDA, .numpy() directo da error)
+            all_inputs.append((inputs.detach().cpu().numpy()) * x_scale)
+            all_outputs.append(outputs.detach().cpu().numpy())
+            all_targets.append(targets.detach().cpu().numpy())
 
     all_inputs = np.concatenate(all_inputs)
     all_outputs = np.concatenate(all_outputs)
@@ -109,20 +119,21 @@ if __name__ == "__main__":
     )
 
     # Create DataLoaders for the datasets
-    train_loader = DataLoader(train_dataset, batch_size=10, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=10, shuffle=False)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # (Mejora) usamos CUDA si está disponible
+    pin_memory = True if device.type == "cuda" else False  # (Mejora) acelera copias a GPU
+    batch_size = 256  # (Mejora) consistente con train.py
 
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
     # Load the best model weights
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model = MultilayerPerceptron(
         input_dim=1,
         output_dim=1,
-        num_hidden_neurons1=256,
-        num_hidden_neurons2=256,
-        apodo="modelo_regresion_polinomio_grado_2",
+        num_hidden_neurons=256,  # consistente con train.py
+        apodo="modelo",
     ).to(device)
-    model.load_state_dict(torch.load(output_folder / "best_model.pth"))
+    model.load_state_dict(torch.load(output_folder / "best_model.pth", map_location=device))  # (Mejora) sin lios CPU/CUDA
 
     metrics = {}
     # Evaluate and plot for train, validation and test datasets

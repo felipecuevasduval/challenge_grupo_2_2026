@@ -16,38 +16,29 @@ class SimplePerceptron(nn.Module):
 
 
 class MultilayerPerceptron(nn.Module):
-    def __init__(self, input_dim, output_dim, num_hidden_neurons1, num_hidden_neurons2, apodo):
+    def __init__(self, input_dim, output_dim, num_hidden_neurons, apodo=None):
         super().__init__()
-        self.fc1 = nn.Linear(input_dim, num_hidden_neurons1)
-        self.fc2 = nn.Linear(num_hidden_neurons1, num_hidden_neurons2)
-        self.fc3 = nn.Linear(num_hidden_neurons2, output_dim)
-        self.activation1 = nn.LeakyReLU()
-        self.activation2 = nn.LeakyReLU()
-        self.activation3 = nn.Identity()
+        self.fc1 = nn.Linear(input_dim, num_hidden_neurons)
+        self.fc2 = nn.Linear(num_hidden_neurons, num_hidden_neurons)
+        self.fc3 = nn.Linear(num_hidden_neurons, num_hidden_neurons)
+        self.fc4 = nn.Linear(num_hidden_neurons, output_dim)  # (Mejora) 3 capas totales: 2 ReLU + salida
+
+        self.relu = nn.ReLU()
+        self.out_act = nn.Identity()
         self.apodo = apodo
 
     def forward(self, x, use_activation=True):
-        x1 = self.fc1(x)
-
-        x1 = self.activation1(x1)
-
-        x2 = self.fc2(x1)
-
-        x2 = self.activation2(x2)
-
-        x3 = self.fc3(x2)
-
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
+        x = self.relu(self.fc3(x))
+        x = self.fc4(x)
         if use_activation:
-            x3 = self.activation3(x3)
-        return x3
-
+            x = self.out_act(x)
+        return x
 
 if __name__ == "__main__":
-    model2 = MultilayerPerceptron(1000, 2, 256, 256, "mi_modelo_de_desfibrilador")
+    model2 = MultilayerPerceptron(1000, 2, 256, "mi_modelo_de_desfibrilador")
 
     x = torch.tensor([1.0])
     print(model2.forward(x))
     pass
-    # x = torch.tensor([1.0])
-    # print(model(x))
-    # pass

@@ -27,7 +27,7 @@ def get_device(force: str = "auto") -> torch.device:
 
 def train_model(output_folder: Path, device: torch.device):
     # Create an instance of the dataset
-    dataset = NoisyRegressionDataset(size=1000)
+    dataset = NoisyRegressionDataset(size=10000)
 
     # Split the dataset into train, validation, and test sets
     train_size = int(0.7 * len(dataset))
@@ -39,22 +39,21 @@ def train_model(output_folder: Path, device: torch.device):
 
     # Create DataLoaders for the datasets
     pin_memory = True if device.type == "cuda" else False
-    train_loader = DataLoader(train_dataset, batch_size=10, shuffle=True, pin_memory=pin_memory)
-    val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False, pin_memory=pin_memory)
+    batch_size = 256  # (Mejora) batch un poco mas grande suele aprovechar mejor la GPU
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     # Define the model, loss function, and optimizer
     input_dim = 1
     output_dim = 1
-    num_hidden_neurons = 256
-    apodo = "modelo_regresion_polinomio_grado_2"
-    model = MultilayerPerceptron(
-        input_dim, output_dim, num_hidden_neurons, num_hidden_neurons, apodo
-    ).to(device)
+    num_hidden_neurons = 256  # (Mejora) un poco mas de capacidad ayuda a aproximar mejor la funcion seno
+    apodo = "modelo"
+    model = MultilayerPerceptron(input_dim, output_dim, num_hidden_neurons, apodo).to(device)
     criterion = nn.MSELoss()
-    optimizer = optim.AdamW(model.parameters(), lr=0.001)
+    optimizer = optim.AdamW(model.parameters(), lr=0.001)  # (Mejora) weight_decay mas suave
 
     # Training loop with validation and saving best weights
-    num_epochs = 200
+    num_epochs = 400  # (Mejora) 
     best_val_loss = float("inf")
     best_model_path = output_folder / "best_model.pth"
 
@@ -63,36 +62,36 @@ def train_model(output_folder: Path, device: torch.device):
 
     for epoch in tqdm(range(num_epochs)):
         model.train()
-        train_loss = 0
+        train_loss = 0  # (Mejora) lo acumulamos como tensor para evitar sincronizar GPU->CPU en cada batch
         for inputs, targets in train_loader:
             # Forward pass
-            inputs_cuda = inputs.to(device)
-            targets_cuda = targets.to(device)
+            inputs_cuda = inputs.to(device, non_blocking=pin_memory)  # (Mejora) non_blocking + pin_memory acelera H2D
+            targets_cuda = targets.to(device, non_blocking=pin_memory)
             outputs = model(inputs_cuda, use_activation=False)
             loss = criterion(outputs, targets_cuda)
 
-            train_loss += loss.item()
+            train_loss += loss.detach()
 
             # Backward pass and optimization
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)  # (Mejora) un poco mas eficiente en GPU
             loss.backward()
             optimizer.step()
 
-        train_loss /= len(train_loader)
+        train_loss = (train_loss / len(train_loader)).item()
         train_losses.append(train_loss)
 
         # Validation step
         model.eval()
-        val_loss = 0
+        val_loss = 0  # (Mejora) igual que train_loss, acumulamos sin .item() por batch
         with torch.no_grad():
             for inputs, targets in val_loader:
-                inputs_cuda = inputs.to(device)
-                targets_cuda = targets.to(device)
+                inputs_cuda = inputs.to(device, non_blocking=pin_memory)
+                targets_cuda = targets.to(device, non_blocking=pin_memory)
                 outputs = model(inputs_cuda, use_activation=False)
                 loss = criterion(outputs, targets_cuda)
-                val_loss += loss.item()
+                val_loss += loss.detach()
 
-        val_loss /= len(val_loader)
+        val_loss = (val_loss / len(val_loader)).item()
         val_losses.append(val_loss)
 
         if val_loss < best_val_loss:

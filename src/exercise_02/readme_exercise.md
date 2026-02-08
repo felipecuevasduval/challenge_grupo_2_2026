@@ -112,24 +112,34 @@ Example for test set:
 ### Discussion of the results
 
 How the model solves the problem?
+Lo que hicimos fue entrenar un MLP para aprender la relación x,y con ruido. Como la curva es no lineal, las ReLU ayudan a que la red siga bien esa forma.
+
 Is there overfitting, underfitting or any other issues? 
+No se ve overfitting: train y validation loss bajan casi juntas. Tampoco underfitting, porque las predicciones se pegan mucho a los valores reales en train/val/test.
+
 How can we improve the model?
+Parar antes (early stopping) porque la loss luego mejora muy poco, normalizar x para entrenar más estable, y ajustar neuronas/regularización solo si en otro dataset se empieza a separar train vs val.
+
 How this model will generalize to new data?
+Generaliza bien si los nuevos datos son parecidos (mismo rango y misma forma). En test se comporta similar a train/val, eso es buena señal.
 
 ## Design Feedback loops
 
 Describe the process you have followed to improve the model and the evolution of performance of the model during the process.
 
-You can include a table stating the chanched parameters and the obtained results after the process.
-
+Lo que hicimos fue: entrenar luego mirar curvas y plots luego ajustar (capacidad, epochs y/o escala) y volver a entrenar. La loss cae rápido al inicio y luego se estabiliza, indicando que el modelo aprende la tendencia principal temprano.
 
 ## Questions
 
 Pleaser answer the following questions. Include graphs if necessary. Store the graphs in the `outs/exercise_02` folder.
 
 ### Which are the differences you found between previous model and this one?
+Del ejercicio 1 al 2, pasamos de una base más simple a un modelo con más capacidad (MLP con ReLU) porque aquí la relación es más no lineal. Por eso el ajuste visual y las métricas salen mejores y consistentes.
+![image](../../outs/exercise_01/train_data_points_plot.png)
+![image](../../outs/exercise_02/train_data_points_plot.png)
 
 ### Does the model generalizes well to new data?
+Sí, para datos similares. Train/val/test tienen resultados parecidos y las curvas de loss no se separan.
 
 
 
