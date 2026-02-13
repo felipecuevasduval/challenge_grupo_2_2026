@@ -3,20 +3,36 @@ import torch.nn as nn
 
 
 class ConvolutionalNetwork(nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, num_classes):
         super().__init__()
-        self.fc1 = nn.Conv2d(input_dim, output_dim, kernel_size=1)
-        self.activation1 = nn.ReLU()
-        self.fc2 = nn.Conv2d(output_dim, output_dim, kernel_size=1)
-        self.activation2 = nn.ReLU()
-        self.fc3 = nn.maxpool2d(kernel_size=2)
-        self.activation3 = nn.Identity()
+        self.layer1 = nn.Sequential(
+        nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
+        nn.BatchNorm2d(64),
+        nn.ReLU())
+        self.layer2 = nn.Sequential(
+        nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+        nn.BatchNorm2d(64),
+        nn.ReLU(), 
+        nn.MaxPool2d(kernel_size = 2, stride = 2))
+        self.fc = nn.Sequential(
+        nn.Dropout(0.5),
+        nn.Linear(7*7*64, 512),
+        nn.ReLU())
+        self.fc1 = nn.Sequential(
+        nn.Dropout(0.5),
+        nn.Linear(512, 512),
+        nn.ReLU())
+        self.fc2= nn.Sequential(
+        nn.Linear(512, num_classes))
 
-    def forward(self, x, use_activation=True):
-        x = self.fc(x)
-        if use_activation:
-            x = self.activation(x)
-        return x
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = out.reshape(out.size(0), -1)
+        out = self.fc(out)
+        out = self.fc1(out)
+        out = self.fc2(out)
+        return out
 
 
 if __name__ == "__main__":

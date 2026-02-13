@@ -27,7 +27,7 @@ def get_device(force: str = "auto") -> torch.device:
 
 def train_model(output_folder: Path, device: torch.device):
     # Create an instance of the dataset
-    dataset = CIFAR10Dataset(size=10000)
+    dataset = CIFAR10Dataset()
 
     # Split the dataset into train, validation, and test sets
     train_size = int(0.7 * len(dataset))
@@ -44,13 +44,10 @@ def train_model(output_folder: Path, device: torch.device):
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     # Define the model, loss function, and optimizer
-    input_dim = 1
-    output_dim = 1
-    num_hidden_neurons = 256  # (Mejora) un poco mas de capacidad ayuda a aproximar mejor la funcion seno
-    apodo = "modelo"
-    model = ConvolutionalNetwork(input_dim, output_dim).to(device)
-    criterion = nn.MSELoss()
-    optimizer = optim.AdamW(model.parameters(), lr=0.001)  # (Mejora) weight_decay mas suave
+    num_clases = 10
+    model = ConvolutionalNetwork(num_clases).to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.AdamW(model.parameters(), lr=0.005)  # (Mejora) weight_decay mas suave
 
     # Training loop with validation and saving best weights
     num_epochs = 400  # (Mejora) 
