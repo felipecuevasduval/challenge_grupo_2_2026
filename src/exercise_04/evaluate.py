@@ -7,15 +7,13 @@ import seaborn as sns
 import torch
 from torch.utils.data import DataLoader, random_split
 
-from .dataset import NoisyRegressionDataset
-from .model import MultilayerPerceptron
+from .dataset import CIFAR10Dataset
+from .model import ConvolutionalNetwork
 
 
 def evaluate_and_plot(loader, model, dataset_name, output_folder):
     model.eval()
-    device = next(
-        model.parameters()
-    ).device  # (Mejora) así evitamos el típico error de CPU vs CUDA en evaluación
+    device = next(model.parameters()).device  # (Mejora) así evitamos el típico error de CPU vs CUDA en evaluación
     all_inputs = []
     all_outputs = []
     all_targets = []
@@ -27,9 +25,7 @@ def evaluate_and_plot(loader, model, dataset_name, output_folder):
     with torch.no_grad():
         for inputs, targets in loader:
             # (Mejora) non_blocking aprovecha pin_memory del DataLoader cuando estás en CUDA
-            inputs = inputs.to(
-                device, non_blocking=True
-            )  # (Mejora) inputs y modelo siempre en el mismo device
+            inputs = inputs.to(device, non_blocking=True)  # (Mejora) inputs y modelo siempre en el mismo device
             targets = targets.to(device, non_blocking=True)
             outputs = model(inputs, use_activation=False)
 
@@ -112,7 +108,7 @@ if __name__ == "__main__":
     # Set the seed for reproducibility
     torch.manual_seed(42)
     # Create an instance of the dataset
-    dataset = NoisyRegressionDataset(size=10000)
+    dataset = CIFAR10Dataset(size=10000)
 
     # Split the dataset into train, validation, and test sets
     train_size = int(0.7 * len(dataset))
@@ -123,31 +119,19 @@ if __name__ == "__main__":
     )
 
     # Create DataLoaders for the datasets
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() else "cpu"
-    )  # (Mejora) usamos CUDA si está disponible
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # (Mejora) usamos CUDA si está disponible
     pin_memory = True if device.type == "cuda" else False  # (Mejora) acelera copias a GPU
     batch_size = 256  # (Mejora) consistente con train.py
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory
-    )
-    val_loader = DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory
-    )
-    test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory
-    )
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
     # Load the best model weights
-    model = MultilayerPerceptron(
+    model = ConvolutionalNetwork(
         input_dim=1,
         output_dim=1,
-        num_hidden_neurons=256,  # consistente con train.py
-        apodo="modelo",
     ).to(device)
-    model.load_state_dict(
-        torch.load(output_folder / "best_model.pth", map_location=device)
-    )  # (Mejora) sin lios CPU/CUDA
+    model.load_state_dict(torch.load(output_folder / "best_model.pth", map_location=device))  # (Mejora) sin lios CPU/CUDA
 
     metrics = {}
     # Evaluate and plot for train, validation and test datasets

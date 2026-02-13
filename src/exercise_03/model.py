@@ -21,7 +21,9 @@ class MultilayerPerceptron(nn.Module):
         self.fc1 = nn.Linear(input_dim, num_hidden_neurons)
         self.fc2 = nn.Linear(num_hidden_neurons, num_hidden_neurons)
         self.fc3 = nn.Linear(num_hidden_neurons, num_hidden_neurons)
-        self.fc4 = nn.Linear(num_hidden_neurons, output_dim)  # (Mejora) 3 capas totales: 2 ReLU + salida
+        self.fc4 = nn.Linear(
+            num_hidden_neurons, output_dim
+        )  # (Mejora) 3 capas totales: 2 ReLU + salida
 
         self.relu = nn.ReLU()
         self.out_act = nn.Identity()
@@ -35,6 +37,7 @@ class MultilayerPerceptron(nn.Module):
         if use_activation:
             x = self.out_act(x)
         return x
+
 
 if __name__ == "__main__":
     model2 = MultilayerPerceptron(1000, 2, 256, "mi_modelo_de_desfibrilador")
