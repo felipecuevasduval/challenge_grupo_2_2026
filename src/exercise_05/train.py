@@ -9,14 +9,10 @@ from tqdm import tqdm
 from torchvision import transforms
 
 from .dataset import CIFAR10Dataset
-from .model import ConvolutionalNetwork
+from .model import MultilayerPerceptron
 
 
 def get_device(force: str = "auto") -> torch.device:
-    """Return a torch.device based on the `force` option.
-
-    force: 'auto'|'cpu'|'cuda' - when 'auto' will pick cuda if available.
-    """
     force = force.lower()
     if force == "cpu":
         return torch.device("cpu")
@@ -47,14 +43,18 @@ def train_model(output_folder: Path, device: torch.device):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     # Model, loss, optimizer
-    num_classes = 10
-    model = ConvolutionalNetwork(num_classes).to(device)
+    input_dim = 3 * 32 * 32
+    output_dim = 10
+    num_hidden_neurons = 128
+
+    model = MultilayerPerceptron(input_dim=input_dim,output_dim=output_dim,
+                                 num_hidden_neurons=num_hidden_neurons,apodo="fc",).to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=0.0001)
 
     # Training loop
-    num_epochs = 35
+    num_epochs = 50
     best_val_loss = float("inf")
     best_model_path = output_folder / "best_model.pth"
 
@@ -66,7 +66,6 @@ def train_model(output_folder: Path, device: torch.device):
         train_loss = 0.0
 
         for inputs, targets in train_loader:
-            # aprovecha mejor la gpu con non_blocking=True (si el device es cuda), pero no es necesario en cpu.
             inputs = inputs.to(device, non_blocking=pin_memory)
             targets = targets.to(device, non_blocking=pin_memory)
 
@@ -87,7 +86,6 @@ def train_model(output_folder: Path, device: torch.device):
         val_loss = 0.0
         with torch.no_grad():
             for inputs, targets in val_loader:
-                # (3) non_blocking=True
                 inputs = inputs.to(device, non_blocking=pin_memory)
                 targets = targets.to(device, non_blocking=pin_memory)
 

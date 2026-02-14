@@ -11,7 +11,7 @@ from torchvision import transforms
 from sklearn.metrics import confusion_matrix  
 
 from .dataset import CIFAR10Dataset
-from .model import ConvolutionalNetwork
+from .model import MultilayerPerceptron
 
 
 def get_device(force: str = "auto") -> torch.device:
@@ -24,7 +24,7 @@ def get_device(force: str = "auto") -> torch.device:
 
 
 def evaluate_classification(loader, model, criterion):
-    """Devuelve loss medio y accuracy."""
+    #Devuelve loss medio y accuracy.
     model.eval()
     device = next(model.parameters()).device
 
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     # Modelo y pesos
-    model = ConvolutionalNetwork(num_classes=10).to(device)
+    model = MultilayerPerceptron(input_dim=3 * 32 * 32, output_dim=10, num_hidden_neurons=128, apodo="fc").to(device)
     model.load_state_dict(torch.load(output_folder / "best_model.pth", map_location=device))
 
     criterion = nn.CrossEntropyLoss()

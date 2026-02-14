@@ -77,7 +77,7 @@ Write your answer here
 
 ### Loss function graph
 
-![image](../../outs/exercise_05/loss_plot.png)
+![image](../../outs/exercise_04/loss_plot.png)
 
 ### Discussion of the training process
 

@@ -5,39 +5,50 @@ import torch.nn as nn
 class ConvolutionalNetwork(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.layer1 = nn.Sequential(
-        nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-        nn.BatchNorm2d(64),
-        nn.ReLU())
-        self.layer2 = nn.Sequential(
-        nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-        nn.BatchNorm2d(64),
-        nn.ReLU(), 
-        nn.MaxPool2d(kernel_size = 2, stride = 2))
-        self.fc = nn.Sequential(
-        nn.Dropout(0.5),
-        nn.Linear(7*7*64, 512),
-        nn.ReLU())
-        self.fc1 = nn.Sequential(
-        nn.Dropout(0.5),
-        nn.Linear(512, 512),
-        nn.ReLU())
-        self.fc2= nn.Sequential(
-        nn.Linear(512, num_classes))
+
+        # Conv -> ReLU -> MaxPool (32x32 -> 16x16)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Conv -> ReLU -> MaxPool (16x16 -> 8x8)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.relu2 = nn.ReLU()
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Flatten + FCs
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(64 * 8 * 8, 512)
+        self.relu3 = nn.ReLU()
+
+        # Se anade Dropout porque sin el se veia overfitting:
+        # el train loss bajaba pero el val loss se mantenia alto o subia.
+        self.dropout = nn.Dropout(p=0.4)
+
+        self.fc2 = nn.Linear(512, 512)
+        self.relu4 = nn.ReLU() # Declaramos cada ReLu por separado por si queremos 
+                               #usar una activacion diferente en cada capa
+        # Salida para clasificación
+        self.fc_out = nn.Linear(512, num_classes)
 
     def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = out.reshape(out.size(0), -1)
-        out = self.fc(out)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        return out
+        x = self.pool1(self.relu1(self.conv1(x)))
+        
+        x = self.pool2(self.relu2(self.conv2(x)))
+
+        x = self.flatten(x)
+
+        x = self.relu3(self.fc1(x))
+        x = self.dropout(x)
+
+        x = self.relu4(self.fc2(x))
+        x = self.fc_out(x)
+
+        return x
 
 
 if __name__ == "__main__":
-    model = ConvolutionalNetwork(10, 2)
-
-    x = torch.tensor([1.0])
-    print(model.forward(x))
-    pass
+    model = ConvolutionalNetwork(10)
+    x = torch.randn(2, 3, 32, 32)
+    y = model(x)
+    print("Output shape:", y.shape)  # [2, 10]

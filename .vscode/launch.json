@@ -130,5 +130,33 @@
             "module": "src.exercise_04.evaluate",
             "console": "integratedTerminal"
         },
+        {
+            "name": "exercise_05.dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_05.dataset",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_05.model",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_05.model",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_05.train",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_05.train",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "exercise_05.evaluate",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.exercise_05.evaluate",
+            "console": "integratedTerminal"
+        },
          ]
 }
