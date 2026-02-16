@@ -40,7 +40,7 @@ def train_model(output_folder: Path, device: torch.device):
                             , num_workers=12, persistent_workers=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory, 
                             num_workers=12, persistent_workers=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
+    #test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     # Model, loss, optimizer
     input_dim = 3 * 32 * 32

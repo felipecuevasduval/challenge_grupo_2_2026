@@ -39,20 +39,20 @@ def train_model(output_folder: Path, device: torch.device):
     # DataLoaders
     batch_size = 128
     pin_memory = True if device.type == "cuda" else False
-
+    # Aunmentamos el numero de workers para aprovechar mejor la GPU.
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=pin_memory
                             , num_workers=12, persistent_workers=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory, 
                             num_workers=12, persistent_workers=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
+    #test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
 
     # Model, loss, optimizer
     num_classes = 10
     model = ConvolutionalNetwork(num_classes).to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=0.0001)
-
+    optimizer = optim.AdamW(model.parameters(), lr=0.0001) #Bajamos el lr de 0.001 a 0.0001 para 
+                                                           # tener un entrenamiento que converja mejor.
     # Training loop
     num_epochs = 35
     best_val_loss = float("inf")

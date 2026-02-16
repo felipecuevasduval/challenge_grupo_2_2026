@@ -24,7 +24,7 @@ def get_device(force: str = "auto") -> torch.device:
 
 
 def evaluate_classification(loader, model, criterion):
-    """Devuelve loss medio y accuracy."""
+    #Devuelve loss medio y accuracy.
     model.eval()
     device = next(model.parameters()).device
 
@@ -137,7 +137,7 @@ def evaluate_and_plot(loader, model, dataset_name, output_folder):
             inputs = inputs.to(device)
             targets = targets.to(device)
 
-            outputs = model(inputs)  # modelo nuevo: sin use_activation
+            outputs = model(inputs)  
 
             all_inputs.append((inputs.detach().cpu().numpy()) * x_scale)
             all_outputs.append(outputs.detach().cpu().numpy())
@@ -195,12 +195,11 @@ if __name__ == "__main__":
     device = get_device("auto")
     print(f"Using device: {device}")
 
-    # Mantengo tu estilo de transform (igual que en train)
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))]
     )
 
-    # Datasets/Loaders CIFAR-10 (clasificación)
+    # Datasets/Loaders
     train_dataset = CIFAR10Dataset("./data", train=True, transform=transform)
     test_dataset = CIFAR10Dataset("./data", train=False, transform=transform)
 
