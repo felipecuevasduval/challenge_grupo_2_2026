@@ -19,144 +19,33 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "exercise_01.dataset",
+            "name": "challenge_code.dataset",
             "type": "debugpy",
             "request": "launch",
-            "module": "src.exercise_01.dataset",
+            "module": "src.challenge_code.dataset",
             "console": "integratedTerminal"
         },
         {
-            "name": "exercise_01.train",
+            "name": "challenge_code.train",
             "type": "debugpy",
             "request": "launch",
-            "module": "src.exercise_01.train",
+            "module": "src.challenge_code.train",
             "console": "integratedTerminal"
         },
         {
-            "name": "exercise_01.model",
+            "name": "challenge_code.model",
             "type": "debugpy",
             "request": "launch",
-            "module": "src.exercise_01.model",
+            "module": "src.challenge_code.model",
             "console": "integratedTerminal"
         },
         {
-            "name": "exercise_01.evaluate",
+            "name": "challenge_code.evaluate",
             "type": "debugpy",
             "request": "launch",
-            "module": "src.exercise_01.evaluate",
+            "module": "src.challenge_code.evaluate",
             "console": "integratedTerminal"
         },
-        {
-            "name": "exercise_02.dataset",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_02.dataset",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_02.train",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_02.train",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_02.model",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_02.model",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_02.evaluate",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_02.evaluate",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_03.dataset",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_03.dataset",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_03.train",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_03.train",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_03.model",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_03.model",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_03.evaluate",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_03.evaluate",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_04.dataset",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_04.dataset",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_04.model",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_04.model",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_04.train",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_04.train",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_04.evaluate",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_04.evaluate",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_05.dataset",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_05.dataset",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_05.model",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_05.model",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_05.train",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_05.train",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "exercise_05.evaluate",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "src.exercise_05.evaluate",
-            "console": "integratedTerminal"
-        },
+       
          ]
 }
