@@ -2,49 +2,53 @@ import torch
 import torch.nn as nn
 
 
-class SimplePerceptron(nn.Module):
-    def __init__(self, input_dim, output_dim):
+class ConvolutionalNetwork(nn.Module):
+    def __init__(self, num_classes):
         super().__init__()
+        #Arquitectura inspirada en VGG.
+        # Conv-ReLU-MaxPooling  (32x32 -> 16x16)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Conv-ReLU-MaxPooling (16x16 -> 8x8)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.relu2 = nn.ReLU()
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        # Flattening + FCs
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(input_dim, output_dim)
-        self.activation = nn.Identity()
+        self.fc1 = nn.Linear(64 * 8 * 8, 512)
+        self.relu3 = nn.ReLU()
+
+        # Se añade Dropout porque sin el se veia overfitting:
+        # el train loss bajaba pero el val loss se mantenia alto o subia.
+        self.dropout = nn.Dropout(p=0.4)
+
+        self.fc2 = nn.Linear(512, 512)
+        self.relu4 = nn.ReLU() # Declaramos cada ReLu por separado por si queremos 
+                               #usar una activacion diferente en cada capa
+        # Salida para clasificación
+        self.fc_out = nn.Linear(512, num_classes)
 
     def forward(self, x):
+        x = self.pool1(self.relu1(self.conv1(x)))
+        
+        x = self.pool2(self.relu2(self.conv2(x)))
+
         x = self.flatten(x)
-        x = self.fc(x)
-        x = self.activation(x)
-        return x
 
+        x = self.relu3(self.fc1(x))
+        x = self.dropout(x)
 
-class MultilayerPerceptron(nn.Module):
-    def __init__(self, input_dim, output_dim, num_hidden_neurons, apodo=None):
-        super().__init__()
-        self.flatten = nn.Flatten()
+        x = self.relu4(self.fc2(x))
+        x = self.fc_out(x)
 
-        self.fc1 = nn.Linear(input_dim, num_hidden_neurons)
-        self.fc2 = nn.Linear(num_hidden_neurons, num_hidden_neurons)
-        self.fc3 = nn.Linear(num_hidden_neurons, num_hidden_neurons)
-        self.fc4 = nn.Linear(num_hidden_neurons, output_dim)
-
-        self.relu = nn.ReLU()
-        self.apodo = apodo
-
-    def forward(self, x):
-        x = self.flatten(x)  # CIFAR10: [N, 3, 32, 32] -> [N, 3072]
-
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        x = self.relu(self.fc3(x))
-        x = self.fc4(x)  
         return x
 
 
 if __name__ == "__main__":
-    input_dim = 3 * 32 * 32
-    output_dim = 10
-    model2 = MultilayerPerceptron(input_dim, output_dim, 512, "mi_mlp")
-
-    x = torch.randn(4, 3, 32, 32)
-    y = model2(x)
-    print("Output shape:", y.shape)  # [4, 10]
-    pass
+    model = ConvolutionalNetwork(10)
+    x = torch.randn(2, 3, 32, 32)
+    y = model(x)
+    print("Output shape:", y.shape)  # [2, 10]
