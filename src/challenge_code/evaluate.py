@@ -1,17 +1,19 @@
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
+
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from sklearn.metrics import confusion_matrix  
 
-from .dataset import CIFAR10Dataset
+from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
+
+from .dataset import ChallengeImageFolderDataset
 from .model import ConvolutionalNetwork
+from .model import VGG19Timm
 
 
 def get_device(force: str = "auto") -> torch.device:
@@ -23,215 +25,227 @@ def get_device(force: str = "auto") -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def evaluate_classification(loader, model, criterion):
-    #Devuelve loss medio y accuracy.
+@torch.no_grad()
+def collect_predictions(loader, model):
     model.eval()
     device = next(model.parameters()).device
-
-    total_loss = 0.0
-    correct = 0
-    total = 0
-
-    with torch.no_grad():
-        for inputs, targets in loader:
-            inputs = inputs.to(device)
-            targets = targets.to(device)
-
-            logits = model(inputs)  # logits [N, 10]
-            loss = criterion(logits, targets)
-
-            total_loss += loss.item()
-            preds = torch.argmax(logits, dim=1)
-
-            correct += (preds == targets).sum().item()
-            total += targets.size(0)
-
-    avg_loss = total_loss / max(1, len(loader))
-    acc = correct / max(1, total)
-    return avg_loss, acc
-
-
-def confusion_matrix_and_plot(loader, model, dataset_name, output_folder, num_classes=10):
-    model.eval()
-    device = next(model.parameters()).device
-
-    class_names = [
-        "airplane", "automobile", "bird", "cat", "deer",
-        "dog", "frog", "horse", "ship", "truck"
-    ]
 
     y_true = []
     y_pred = []
 
-    with torch.no_grad():
-        for inputs, targets in loader:
-            inputs = inputs.to(device)
-            targets = targets.to(device)
+    for inputs, targets in loader:
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
-            logits = model(inputs)
-            preds = torch.argmax(logits, dim=1)
+        logits = model(inputs)
+        preds = torch.argmax(logits, dim=1)
 
-            y_true.append(targets.detach().cpu().numpy())
-            y_pred.append(preds.detach().cpu().numpy())
+        y_true.append(targets.detach().cpu().numpy())
+        y_pred.append(preds.detach().cpu().numpy())
 
     y_true = np.concatenate(y_true)
     y_pred = np.concatenate(y_pred)
+    return y_true, y_pred
+
+
+def compute_ovr_metrics_from_cm(cm: np.ndarray):
+    """
+    Para multi-clase: calcula métricas por clase con One-vs-Rest y promedia (macro).
+    Devuelve:
+      sensitivity (recall), specificity, ppv (precision), npv
+    """
+    num_classes = cm.shape[0]
+
+    sens = []
+    spec = []
+    ppv = []
+    npv = []
+
+    total = cm.sum()
+
+    for k in range(num_classes):
+        TP = cm[k, k]
+        FN = cm[k, :].sum() - TP
+        FP = cm[:, k].sum() - TP
+        TN = total - TP - FN - FP
+
+        # Sensitivity / Recall: TP / (TP + FN)
+        sens_k = TP / (TP + FN) if (TP + FN) > 0 else np.nan
+
+        # Specificity: TN / (TN + FP)
+        spec_k = TN / (TN + FP) if (TN + FP) > 0 else np.nan
+
+        # PPV / Precision: TP / (TP + FP)
+        ppv_k = TP / (TP + FP) if (TP + FP) > 0 else np.nan
+
+        # NPV: TN / (TN + FN)
+        npv_k = TN / (TN + FN) if (TN + FN) > 0 else np.nan
+
+        sens.append(sens_k)
+        spec.append(spec_k)
+        ppv.append(ppv_k)
+        npv.append(npv_k)
+
+    # macro mean ignorando NaN (por si alguna clase no aparece)
+    metrics = {
+        "Sensitivity (macro)": float(np.nanmean(sens)),
+        "Specificity (macro)": float(np.nanmean(spec)),
+        "PPV / Precision (macro)": float(np.nanmean(ppv)),
+        "NPV (macro)": float(np.nanmean(npv)),
+    }
+
+    # por clase
+    per_class = pd.DataFrame(
+        {
+            "Sensitivity": sens,
+            "Specificity": spec,
+            "PPV": ppv,
+            "NPV": npv,
+        }
+    )
+
+    return metrics, per_class
+
+
+def save_confusion_matrix(cm, class_names, out_png: Path, title: str):
+    plt.figure(figsize=(12, 10))
+    plt.imshow(cm, interpolation="nearest", cmap="Blues")
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(class_names))
+    plt.xticks(tick_marks, class_names, rotation=45, ha="right")
+    plt.yticks(tick_marks, class_names)
+
+    # números encima
+    thresh = cm.max() / 2.0 if cm.max() > 0 else 0
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(
+                j, i, int(cm[i, j]),
+                horizontalalignment="center",
+                color="white" if cm[i, j] > thresh else "black",
+            )
+
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
+    plt.tight_layout()
+    plt.savefig(out_png)
+    plt.close()
+
+
+def evaluate_classification_metrics(loader, model, num_classes: int):
+    """
+    Devolvemos:
+      - confusion matrix
+      - dict de métricas pedidas
+      - df por clase con sens/spec/ppv/npv
+    """
+    y_true, y_pred = collect_predictions(loader, model)
 
     cm = confusion_matrix(y_true, y_pred, labels=list(range(num_classes)))
 
-    # Plot con nombres + números
-    plt.figure(figsize=(12, 10))
-    ax = sns.heatmap(
-        cm,
-        annot=True,
-        fmt="d",
-        cmap="Blues",
-        cbar=True,
-        square=True,
-        xticklabels=class_names,
-        yticklabels=class_names,
-    )
-    ax.set_xlabel("Predicted label")
-    ax.set_ylabel("True label")
-    ax.set_title(f"Confusion Matrix - {dataset_name}")
-    plt.xticks(rotation=45, ha="right")
-    plt.yticks(rotation=0)
-    plt.tight_layout()
-    plt.savefig(output_folder / f"{dataset_name}_confusion_matrix.png")
-    plt.show()
-    plt.close()
+    acc = accuracy_score(y_true, y_pred)
+    f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0)
+    f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0)
 
-    return cm
+    ovr_metrics, per_class = compute_ovr_metrics_from_cm(cm)
 
+    metrics = {
+        "Accuracy": float(acc),
+        "F1-Score (macro)": float(f1_macro),
+        "F1-Score (weighted)": float(f1_weighted),
+        **ovr_metrics,
+    }
 
-
-def save_metrics_as_picture(metrics, filepath):
-    df = pd.DataFrame(metrics).round(3)
-
-    fig, ax = plt.subplots(figsize=(8, 2))
-    ax.axis("tight")
-    ax.axis("off")
-    ax.table(
-        cellText=df.values,
-        colLabels=df.columns,
-        rowLabels=df.index,
-        cellLoc="center",
-        loc="center",
-    )
-    plt.savefig(filepath)
-    plt.close()
-
-
-def evaluate_and_plot(loader, model, dataset_name, output_folder):
-    model.eval()
-    device = next(model.parameters()).device
-    all_inputs = []
-    all_outputs = []
-    all_targets = []
-
-    base_dataset = getattr(loader.dataset, "dataset", loader.dataset)
-    x_scale = getattr(base_dataset, "x_scale", 1.0)
-
-    with torch.no_grad():
-        for inputs, targets in loader:
-            inputs = inputs.to(device)
-            targets = targets.to(device)
-
-            outputs = model(inputs)  
-
-            all_inputs.append((inputs.detach().cpu().numpy()) * x_scale)
-            all_outputs.append(outputs.detach().cpu().numpy())
-            all_targets.append(targets.detach().cpu().numpy())
-
-    all_inputs = np.concatenate(all_inputs)
-    all_outputs = np.concatenate(all_outputs)
-    all_targets = np.concatenate(all_targets)
-
-    df = pd.DataFrame(
-        data=np.array(
-            [all_inputs.flatten(), all_targets.flatten(), all_outputs.flatten()]
-        ).transpose(),
-        columns=["x", "y_true", "y_pred"],
-    )
-
-    r2 = 1 - np.sum((all_targets - all_outputs) ** 2) / np.sum(
-        (all_targets - np.mean(all_targets)) ** 2
-    )
-    mae = np.mean(np.abs(all_targets - all_outputs))
-    mse = np.mean((all_targets - all_outputs) ** 2)
-
-    metrics = {"R2": r2, "MAE": mae, "MSE": mse}
-
-    print(f"Evaluation metrics for {dataset_name} dataset:")
-    print(metrics)
-
-    ax = sns.regplot(df, x="y_true", y="y_pred", label=dataset_name)
-    ax.set_title(f"Regression plot for {dataset_name} dataset")
-    plt.legend()
-    plt.savefig(f"{output_folder}/{dataset_name}_regression_plot.png")
-    plt.show()
-    plt.close()
-
-    plt.figure(figsize=(10, 6))
-    sns.scatterplot(data=df, x="x", y="y_true", label="True")
-    sns.scatterplot(data=df, x="x", y="y_pred", label="Predicted")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.title(f"Data points for {dataset_name} dataset")
-    plt.legend()
-    plt.savefig(f"{output_folder}/{dataset_name}_data_points_plot.png")
-    plt.show()
-    plt.close()
-
-    return metrics
+    return cm, metrics, per_class
 
 
 if __name__ == "__main__":
     torch.manual_seed(42)
 
-    output_folder = Path(__file__).parent.parent.parent / "outs" / Path(__file__).parent.name
-    output_folder.mkdir(exist_ok=True, parents=True)
+    # === CONFIG ===
+    dataset_root = Path(r"C:\TAIA\challenge_grupo_2_2026\dataset_challenge")
+    test_dir = dataset_root / "val"   # test set real
+    num_classes = 19                 
+    batch_size = 32
+
+    # carpeta donde está best_model.pth
+    run_dir = Path(__file__).parent / "outs" / "run_004"
+    best_model = run_dir / "best_model.pth"
+
+    out_dir = run_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     device = get_device("auto")
-    print(f"Using device: {device}")
+    print("Using device:", device)
+    print("Test dir:", test_dir)
+    print("Model:", best_model)
 
+    imgsize = 224
+    # Transform  
     transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0))]
+        [
+            transforms.Resize((imgsize, imgsize)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
+        ]
     )
 
-    # Datasets/Loaders
-    train_dataset = CIFAR10Dataset("./data", train=True, transform=transform)
-    test_dataset = CIFAR10Dataset("./data", train=False, transform=transform)
+    # === Dataset/Loader ===
+    test_dataset = ChallengeImageFolderDataset(test_dir, transform=transform)
 
-    batch_size = 128
-    pin_memory = True if device.type == "cuda" else False
+    if len(test_dataset.classes) != num_classes:
+        raise ValueError(
+            f"Se detectaron {len(test_dataset.classes)} clases en {test_dir} "
+            f"({test_dataset.classes}) pero num_classes={num_classes}."
+        )
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=pin_memory)
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=8,
+        pin_memory=(device.type == "cuda"),
+        persistent_workers=True,
+    )
 
-    # Modelo y pesos
-    model = ConvolutionalNetwork(num_classes=10).to(device)
-    model.load_state_dict(torch.load(output_folder / "best_model.pth", map_location=device))
+    # === Modelo ===
+    model = VGG19Timm(num_classes=num_classes, pretrained=True).to(device)
+    model.load_state_dict(torch.load(best_model, map_location=device))
+    model.eval()
 
-    criterion = nn.CrossEntropyLoss()
+    # === Evaluación ===
+    cm, metrics, per_class = evaluate_classification_metrics(test_loader, model, num_classes)
 
-    # Métricas de clasificación
-    metrics = {}
-    train_loss, train_acc = evaluate_classification(train_loader, model, criterion)
-    test_loss, test_acc = evaluate_classification(test_loader, model, criterion)
+    # === Imprimir como tú pediste ===
+    print("\nConfussion matrix:")
+    print(cm)
 
-    metrics["train"] = {"loss": train_loss, "accuracy": train_acc}
-    metrics["test"] = {"loss": test_loss, "accuracy": test_acc}
+    print("\nMetrics over the test set:------")
+    print(f"F1-Score (macro): {metrics['F1-Score (macro)']:.4f}")
+    print(f"Accuracy: {metrics['Accuracy']:.4f}")
+    print(f"Sensitivity (macro): {metrics['Sensitivity (macro)']:.4f}")
+    print(f"Especificity (macro): {metrics['Specificity (macro)']:.4f}")
+    print(f"Negative predictive value (macro): {metrics['NPV (macro)']:.4f}")
+    print(f"Positive predictive value (macro): {metrics['PPV / Precision (macro)']:.4f}")
 
-    print("Classification metrics:")
-    print(metrics)
+    # === Guardar archivos ===
+    # Confusion matrix csv + png
+    cm_df = pd.DataFrame(cm, index=test_dataset.classes, columns=test_dataset.classes)
+    cm_df.to_csv(out_dir / "confusion_matrix_test.csv")
 
-    # Guardar métricas
-    pd.DataFrame(metrics).to_csv(output_folder / "metrics.csv")
-    save_metrics_as_picture(metrics, output_folder / "metrics.png")
+    save_confusion_matrix(
+        cm,
+        class_names=test_dataset.classes,
+        out_png=out_dir / "confusion_matrix_test.png",
+        title="Confusion Matrix - TEST",
+    )
 
-    # Matriz de confusión con números (y CSV)
-    confusion_matrix_and_plot(train_loader, model, "train", output_folder, num_classes=10)
-    confusion_matrix_and_plot(test_loader, model, "test", output_folder, num_classes=10)
+    # Metrics csv
+    pd.Series(metrics).to_csv(out_dir / "metrics_test.csv")
 
-    print("Evaluation complete!")
+    # Per-class metrics
+    per_class.index = test_dataset.classes
+    per_class.to_csv(out_dir / "metrics_per_class_test.csv")
+
+    print("\nEvaluation complete!")
