@@ -1,0 +1,13 @@
+train_dir=C:\TAIA\challenge_grupo_2_2026\dataset_challenge\train
+val_dir=C:\TAIA\challenge_grupo_2_2026\dataset_challenge\val
+num_classes=19
+TRAIN_IMAGES=1390
+VAL_IMAGES=193
+IMG_SIZE=224x224
+epochs=20
+batch_size=32
+lr=1e-05
+NUM_WORKERS=8
+BEST_VAL_LOSS=0.3406191473560674
+BEST_MODEL=C:\TAIA\challenge_grupo_2_2026\src\challenge_code\outs\run_004\best_model.pth
+CLASS_TO_IDX={'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'I': 7, 'K': 8, 'L': 9, 'M': 10, 'N': 11, 'O': 12, 'P': 13, 'Q': 14, 'R': 15, 'S': 16, 'T': 17, 'U': 18}

@@ -1,0 +1,8 @@
+,0
+Accuracy,0.8652849740932642
+F1-Score (macro),0.8640360911170187
+F1-Score (weighted),0.8641122714998585
+Sensitivity (macro),0.8661084529505583
+Specificity (macro),0.9925174627175979
+PPV / Precision (macro),0.8669989367357788
+NPV (macro),0.9925328717474055
