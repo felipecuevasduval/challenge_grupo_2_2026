@@ -12,7 +12,7 @@ from tqdm import tqdm
 from .dataset import ChallengeImageFolderDataset
 from .model import ConvolutionalNetwork
 from .model import VGG19Timm
-from .model import DinoV3Timm
+from .model import DinoV2Timm
 
 
 def get_device(force: str = "auto") -> torch.device:
@@ -74,6 +74,11 @@ def train_model():
     lr = 1e-5
     batch_size = 32
 
+    # === EARLY STOPPING CONFIG (NUEVO) ===
+    patience = 3          # cuántas épocas esperar sin mejora
+    min_delta = 0.0       # mejora mínima requerida en val_loss para resetear paciencia
+    # ====================================
+
     device = get_device("auto")
     out_dir = make_output_folder()
 
@@ -88,7 +93,7 @@ def train_model():
         raise FileNotFoundError(f"No existe: {val_dir}")
 
     # Transforms
-    imgsize = 224
+    imgsize = 64
     transform = transforms.Compose(
         [
             transforms.Resize((imgsize, imgsize)),
@@ -146,8 +151,8 @@ def train_model():
 
     # === Model ===
     # model = ConvolutionalNetwork(num_classes).to(device)
-    # model = VGG19Timm(num_classes=19, pretrained=False).to(device)
-    model = DinoV3Timm(num_classes=19, pretrained=False).to(device)
+    model = VGG19Timm(num_classes=19, pretrained=True).to(device)
+    #model = DinoV2Timm(num_classes=19, pretrained=False).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 
@@ -157,6 +162,10 @@ def train_model():
     train_losses = []
     val_losses = []
     val_accs = []
+
+
+    no_improve_epochs = 0
+  
 
     for epoch in range(1, epochs + 1):
         model.train()
@@ -180,14 +189,19 @@ def train_model():
         train_loss = running / max(1, len(train_loader))
         train_losses.append(train_loss)
 
-
         val_loss, val_acc = validate(val_loader, model, criterion, device, pin_memory)
         val_losses.append(val_loss)
         val_accs.append(val_acc)
 
-        if val_loss < best_val_loss:
+        # === EARLY STOPPING LOGIC ===
+        improved = (best_val_loss - val_loss) > min_delta
+        if improved:
             best_val_loss = val_loss
             torch.save(model.state_dict(), best_path)
+            no_improve_epochs = 0
+        else:
+            no_improve_epochs += 1
+        # ====================================
 
         print(
             f"Epoch {epoch:02d}/{epochs} | "
@@ -195,12 +209,23 @@ def train_model():
             f"Best Val Loss: {best_val_loss:.4f}"
         )
 
+        # === STOP CONDITION  ===
+        if no_improve_epochs >= patience:
+            print(
+                f"\nEarly stopping activado: no hay mejora en Val Loss por {patience} épocas. "
+                f"Mejor Val Loss: {best_val_loss:.4f}"
+            )
+            break
+        # ===============================
+
     print("\nGuardado mejor modelo en:", best_path)
 
-    # === Plots ===
+        # === Plots ===
+    ran_epochs = len(train_losses)  
+
     plt.figure(figsize=(10, 5))
-    plt.plot(range(1, epochs + 1), train_losses, label="Train Loss")
-    plt.plot(range(1, epochs + 1), val_losses, label="Val Loss")
+    plt.plot(range(1, ran_epochs + 1), train_losses, label="Train Loss")
+    plt.plot(range(1, ran_epochs + 1), val_losses, label="Val Loss")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.title("Loss Curves")
@@ -210,7 +235,7 @@ def train_model():
     plt.close()
 
     plt.figure(figsize=(10, 5))
-    plt.plot(range(1, epochs + 1), val_accs, label="Val Accuracy")
+    plt.plot(range(1, ran_epochs + 1), val_accs, label="Val Accuracy")
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.title("Validation Accuracy")
@@ -236,6 +261,7 @@ def train_model():
                 f"BEST_VAL_LOSS={best_val_loss}",
                 f"BEST_MODEL={best_path}",
                 f"CLASS_TO_IDX={train_dataset.class_to_idx}",
+                f"Model_Used={model.__class__.__name__}",
             ]
         ),
         encoding="utf-8",

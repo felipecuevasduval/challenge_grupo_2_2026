@@ -55,13 +55,13 @@ class VGG19Timm(nn.Module):
 
     def forward(self, x):
         return self.backbone(x)
-class DinoV3Timm(nn.Module):
+class DinoV2Timm(nn.Module):
 
     def __init__(
         self,
         num_classes: int,
-        pretrained: bool = True,
-        model_name: str = "vit_base_patch16_dinov3.lvd1689m",
+        pretrained: bool = False,
+        model_name: str = "vit_small_patch14_reg4_dinov2",
         drop_rate: float = 0.0,
         drop_path_rate: float = 0.0,
     ):
