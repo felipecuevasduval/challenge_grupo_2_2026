@@ -13,6 +13,7 @@ from .dataset import ChallengeImageFolderDataset
 from .model import ConvolutionalNetwork
 from .model import VGG19Timm
 from .model import DinoV2Timm
+from .model import VGG19BN
 
 
 def get_device(force: str = "auto") -> torch.device:
@@ -71,11 +72,11 @@ def train_model():
 
     num_classes = 19
     epochs = 20
-    lr = 1e-5
+    lr = 5e-6
     batch_size = 32
 
-    # === EARLY STOPPING CONFIG (NUEVO) ===
-    patience = 3          # cuántas épocas esperar sin mejora
+    # === EARLY STOPPING CONFIG ===
+    patience = 4          # cuántas épocas esperar sin mejora
     min_delta = 0.0       # mejora mínima requerida en val_loss para resetear paciencia
     # ====================================
 
@@ -93,7 +94,7 @@ def train_model():
         raise FileNotFoundError(f"No existe: {val_dir}")
 
     # Transforms
-    imgsize = 64
+    imgsize = 224
     transform = transforms.Compose(
         [
             transforms.Resize((imgsize, imgsize)),
@@ -151,8 +152,9 @@ def train_model():
 
     # === Model ===
     # model = ConvolutionalNetwork(num_classes).to(device)
-    model = VGG19Timm(num_classes=19, pretrained=True).to(device)
-    #model = DinoV2Timm(num_classes=19, pretrained=False).to(device)
+    #model = VGG19Timm(num_classes=19, pretrained=True).to(device)
+    model = DinoV2Timm(num_classes=19, pretrained=True).to(device)
+    #model = VGG19BN(num_classes=19, pretrained=True).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=lr)
 

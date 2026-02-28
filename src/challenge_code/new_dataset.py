@@ -6,7 +6,7 @@ from PIL import Image
 from torchvision import transforms
 
 
-def build_augmentation_pipeline(imgsize: int = 64):
+def build_augmentation_pipeline(imgsize: int = 224):
     # Puedes ajustar estos valores si quieres más/menos agresivo
     return transforms.Compose(
         [
@@ -35,7 +35,7 @@ def augment_folder(
     src_root: str,
     dst_root: str,
     num_aug_per_image: int = 3,
-    imgsize: int = 64,
+    imgsize: int = 224,
     seed: int = 42,
     copy_original: bool = True,
     out_ext: str = ".jpg",
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         src_root=SRC_TEST,
         dst_root=DST_TEST3,
         num_aug_per_image=3,   # genera 3 variantes por imagen (más el original si copy_original=True)
-        imgsize=64,
+        imgsize=224,
         seed=42,
         copy_original=False,    # si no quieres copiar el original, pon False
         out_ext=".jpg",

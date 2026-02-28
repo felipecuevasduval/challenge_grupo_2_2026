@@ -14,6 +14,8 @@ from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
 from .dataset import ChallengeImageFolderDataset
 from .model import ConvolutionalNetwork
 from .model import VGG19Timm
+from .model import DinoV2Timm
+from .model import VGG19BN
 
 
 def get_device(force: str = "auto") -> torch.device:
@@ -170,10 +172,11 @@ if __name__ == "__main__":
     batch_size = 32
 
     # carpeta donde está best_model.pth
-    run_dir = Path(__file__).parent / "outs" / "run_005"
+    run_dir = Path(__file__).parent / "outs" / "run_008"
     best_model = run_dir / "best_model.pth"
 
     out_dir = Path(__file__).parent / "outs" / "Prueba1"
+    #run_dir 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     device = get_device("auto")
@@ -181,7 +184,7 @@ if __name__ == "__main__":
     print("Test dir:", test_dir)
     print("Model:", best_model)
 
-    imgsize = 64
+    imgsize = 224
     # Transform  
     transform = transforms.Compose(
         [
@@ -210,7 +213,9 @@ if __name__ == "__main__":
     )
 
     # === Modelo ===
-    model = VGG19Timm(num_classes=num_classes, pretrained=True).to(device)
+    #model = VGG19BN(num_classes=19, pretrained=True).to(device)
+    #model = VGG19Timm(num_classes=num_classes, pretrained=True).to(device)
+    model = DinoV2Timm(num_classes=num_classes, pretrained=True).to(device)
     model.load_state_dict(torch.load(best_model, map_location=device))
     model.eval()
 

@@ -56,12 +56,12 @@ class VGG19Timm(nn.Module):
     def forward(self, x):
         return self.backbone(x)
 class DinoV2Timm(nn.Module):
-
     def __init__(
         self,
         num_classes: int,
-        pretrained: bool = False,
-        model_name: str = "vit_small_patch14_reg4_dinov2",
+        pretrained: bool = True,
+        model_name: str = "vit_small_patch14_dinov2.lvd142m",
+        img_size: int = 224,
         drop_rate: float = 0.0,
         drop_path_rate: float = 0.0,
     ):
@@ -70,8 +70,21 @@ class DinoV2Timm(nn.Module):
             model_name,
             pretrained=pretrained,
             num_classes=num_classes,
+            img_size=img_size,             
+            dynamic_img_size=True,         
             drop_rate=drop_rate,
             drop_path_rate=drop_path_rate,
+        )
+
+    def forward(self, x):
+        return self.backbone(x)
+class VGG19BN(nn.Module):
+    def __init__(self, num_classes: int, pretrained: bool = True):
+        super().__init__()
+        self.backbone = timm.create_model(
+            "vgg19_bn",
+            pretrained=pretrained,
+            num_classes=num_classes,
         )
 
     def forward(self, x):
