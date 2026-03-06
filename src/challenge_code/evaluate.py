@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
     # === CONFIG ===
     dataset_root = Path(r"C:\TAIA\challenge_grupo_2_2026\dataset_challenge")
-    test_dir = dataset_root / "test3"   # test set real
+    test_dir = dataset_root / "test2"   # test set real
     num_classes = 19                 
     batch_size = 32
 
@@ -175,8 +175,8 @@ if __name__ == "__main__":
     run_dir = Path(__file__).parent / "outs" / "run_008"
     best_model = run_dir / "best_model.pth"
 
-    out_dir = Path(__file__).parent / "outs" / "Prueba1"
-    #run_dir 
+    out_dir = Path(__file__).parent / "outs" / "Prueba_imagenes_internet"
+    #out_dir = run_dir 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     device = get_device("auto")
