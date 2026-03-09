@@ -15,6 +15,7 @@ from .model import VGG19Timm
 from .model import DinoV2Timm
 from .model import VGG19BN
 
+from .handcrop_transform import HandCropMP
 
 def get_device(force: str = "auto") -> torch.device:
     force = force.lower()
@@ -96,27 +97,32 @@ def train_model():
     # Transforms
     imgsize = 224
     transform = transforms.Compose(
-        [
-            transforms.Resize((imgsize, imgsize)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
-        ]
-    )
+    [
+        #HandCropMP(margin=0.25, max_num_hands=1, fallback="center_crop"),
+        transforms.Resize((imgsize, imgsize)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406),
+                             (0.229, 0.224, 0.225)),
+    ]
+)
+
     transform_train = transforms.Compose(
-        [
-            transforms.Resize((imgsize, imgsize)),
-            transforms.RandomApply(
-                [
-                    transforms.RandomRotation(45),
-                    transforms.RandomHorizontalFlip(p=0.5),
-                    transforms.ColorJitter(0.2, 0.2, 0.2, 0.05),
-                ],
-                p=0.8,
-            ),
-            transforms.ToTensor(),
-            transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
-        ]
-    )
+    [
+        #HandCropMP(margin=0.25, max_num_hands=1, fallback="center_crop"),
+        transforms.Resize((imgsize, imgsize)),
+        transforms.RandomApply(
+            [
+                transforms.RandomRotation(45),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.ColorJitter(0.2, 0.2, 0.2, 0.05),
+            ],
+            p=0.8,
+        ),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406),
+                             (0.229, 0.224, 0.225)),
+    ]
+)
 
     # Datasets
     train_dataset = ChallengeImageFolderDataset(train_dir, transform=transform_train)

@@ -11,6 +11,8 @@ from torchvision import transforms
 
 from sklearn.metrics import confusion_matrix, f1_score, accuracy_score
 
+from .handcrop_transform import HandCropMP
+
 from .dataset import ChallengeImageFolderDataset
 from .model import ConvolutionalNetwork
 from .model import VGG19Timm
@@ -172,11 +174,12 @@ if __name__ == "__main__":
     batch_size = 32
 
     # carpeta donde está best_model.pth
-    run_dir = Path(__file__).parent / "outs" / "run_008"
+    run_dir = Path(__file__).parent / "outs" / "run_009"
     best_model = run_dir / "best_model.pth"
 
     out_dir = Path(__file__).parent / "outs" / "Prueba_imagenes_internet"
     #out_dir = run_dir 
+    #out_dir = Path(__file__).parent / "outs" / "Prueba1"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     device = get_device("auto")
@@ -187,12 +190,14 @@ if __name__ == "__main__":
     imgsize = 224
     # Transform  
     transform = transforms.Compose(
-        [
-            transforms.Resize((imgsize, imgsize)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),
-        ]
-    )
+    [
+        #HandCropMP(margin=0.25, max_num_hands=1, fallback="center_crop"),
+        transforms.Resize((imgsize, imgsize)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406),
+                             (0.229, 0.224, 0.225)),
+    ]
+)
 
     # === Dataset/Loader ===
     test_dataset = ChallengeImageFolderDataset(test_dir, transform=transform)

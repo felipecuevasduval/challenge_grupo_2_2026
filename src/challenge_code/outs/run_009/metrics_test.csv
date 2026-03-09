@@ -1,0 +1,8 @@
+,0
+Accuracy,1.0
+F1-Score (macro),1.0
+F1-Score (weighted),1.0
+Sensitivity (macro),1.0
+Specificity (macro),1.0
+PPV / Precision (macro),1.0
+NPV (macro),1.0
